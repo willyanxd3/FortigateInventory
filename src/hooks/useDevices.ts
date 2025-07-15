@@ -61,15 +61,15 @@ export function useDevices() {
       if (data.success) {
         setDevices(data.devices);
         if (data.using_mock_data) {
-          setError('⚠️ Usando dados de demonstração - FortiGate não disponível');
+          setError('⚠️ Using demo data - FortiGate unavailable');
         }
       } else {
-        setError('Erro ao carregar dispositivos');
+        setError('Error loading devices');
         setDevices(data.devices || []);
       }
     } catch (err) {
-      setError('Erro de conexão com o servidor');
-      console.error('Erro ao buscar dispositivos:', err);
+      setError('Server connection error');
+      console.error('Error fetching devices:', err);
     } finally {
       setLoading(false);
     }
@@ -84,7 +84,7 @@ export function useDevices() {
         setWhitelist(data.whitelist);
       }
     } catch (err) {
-      console.error('Erro ao buscar whitelist:', err);
+      console.error('Error fetching whitelist:', err);
     }
   };
 
@@ -96,7 +96,7 @@ export function useDevices() {
     } catch (err) {
       return {
         success: false,
-        message: 'Erro de conexão',
+        message: 'Connection error',
         error: err instanceof Error ? err.message : 'Erro desconhecido'
       };
     }
@@ -120,7 +120,7 @@ export function useDevices() {
     } catch (err) {
       return {
         success: false,
-        error: 'Erro ao salvar configurações'
+        error: 'Error saving settings'
       };
     }
   };
@@ -143,7 +143,7 @@ export function useDevices() {
     } catch (err) {
       return {
         success: false,
-        error: 'Erro ao salvar whitelist'
+        error: 'Error saving whitelist'
       };
     }
   };
@@ -166,7 +166,7 @@ export function useDevices() {
     } catch (err) {
       return {
         success: false,
-        error: 'Erro ao atualizar whitelist'
+        error: 'Error updating whitelist'
       };
     }
   };
@@ -185,7 +185,7 @@ export function useDevices() {
     } catch (err) {
       return {
         success: false,
-        error: 'Erro ao deletar whitelist'
+        error: 'Error deleting whitelist'
       };
     }
   };
@@ -208,7 +208,7 @@ export function useDevices() {
     } catch (err) {
       return {
         success: false,
-        error: 'Erro ao adicionar à whitelist'
+        error: 'Error adding to whitelist'
       };
     }
   };
@@ -227,7 +227,7 @@ export function useDevices() {
     } catch (err) {
       return {
         success: false,
-        error: 'Erro ao remover da whitelist'
+        error: 'Error removing from whitelist'
       };
     }
   };

@@ -89,7 +89,7 @@ function convertTimestamp(timestamp) {
 // Função para verificar se dispositivo está dentro do tempo de retenção
 function isWithinRetention(lastSeen, retentionHours) {
   if (!lastSeen) return false;
-  const now = new Date().getTime() / 1000;
+  const now = Math.floor(Date.now() / 1000);
   const retentionSeconds = retentionHours * 3600;
   return (now - lastSeen) <= retentionSeconds;
 }
@@ -104,10 +104,10 @@ const mockDevices = [
     hardware_family: 'Virtual Machine',
     vdom: 'root',
     os_name: 'Ubuntu',
-    last_seen: Math.floor(Date.now() / 1000) - 300,
+    last_seen: Math.floor(Date.now() / 1000) - 300, // 5 minutes ago
     unjoined_forticlient_endpoint: false,
     is_online: false,
-    active_start_time: Math.floor(Date.now() / 1000) - 3600,
+    active_start_time: Math.floor(Date.now() / 1000) - 3600, // 1 hour ago
     is_fortiguard_src: true,
     purdue_level: '3',
     master_mac: '00:0c:29:19:e4:4d',
@@ -124,11 +124,11 @@ const mockDevices = [
     os_version: '13',
     hostname: 'POCO-X4-Pro-5G',
     hardware_type: 'Mobile',
-    last_seen: Math.floor(Date.now() / 1000) - 120,
+    last_seen: Math.floor(Date.now() / 1000) - 120, // 2 minutes ago
     host_src: 'dhcp',
     unjoined_forticlient_endpoint: false,
     is_online: true,
-    active_start_time: Math.floor(Date.now() / 1000) - 7200,
+    active_start_time: Math.floor(Date.now() / 1000) - 7200, // 2 hours ago
     dhcp_lease_status: 'leased',
     dhcp_lease_expire: Math.floor(Date.now() / 1000) + 86400,
     dhcp_lease_reserved: false,
@@ -152,9 +152,9 @@ const mockDevices = [
     vdom: 'root',
     os_name: 'Windows',
     os_version: '11',
-    last_seen: Math.floor(Date.now() / 1000) - 60,
+    last_seen: Math.floor(Date.now() / 1000) - 60, // 1 minute ago
     is_online: true,
-    active_start_time: Math.floor(Date.now() / 1000) - 14400,
+    active_start_time: Math.floor(Date.now() / 1000) - 14400, // 4 hours ago
     detected_interface: 'lan1',
     is_master_device: true,
     purdue_level: '3'
@@ -168,10 +168,42 @@ const mockDevices = [
     hardware_family: 'LaserJet',
     vdom: 'root',
     os_name: 'Embedded',
-    last_seen: Math.floor(Date.now() / 1000) - 900,
+    last_seen: Math.floor(Date.now() / 1000) - 900, // 15 minutes ago
     is_online: true,
-    active_start_time: Math.floor(Date.now() / 1000) - 10800,
+    active_start_time: Math.floor(Date.now() / 1000) - 10800, // 3 hours ago
     detected_interface: 'lan2',
+    is_master_device: true,
+    purdue_level: '3'
+  },
+  {
+    ipv4_address: '172.31.254.150',
+    mac: '11:22:33:44:55:66',
+    hostname: 'LAPTOP-OFFLINE',
+    hardware_vendor: 'Lenovo',
+    hardware_type: 'Laptop',
+    hardware_family: 'ThinkPad',
+    vdom: 'root',
+    os_name: 'Windows',
+    os_version: '10',
+    last_seen: Math.floor(Date.now() / 1000) - 10800, // 3 hours ago (offline)
+    is_online: false,
+    active_start_time: Math.floor(Date.now() / 1000) - 18000, // 5 hours ago
+    detected_interface: 'lan1',
+    is_master_device: true,
+    purdue_level: '3'
+  },
+  {
+    ipv4_address: '172.31.254.250',
+    mac: '77:88:99:AA:BB:CC',
+    hostname: 'OLD-DEVICE',
+    hardware_vendor: 'Generic',
+    hardware_type: 'Unknown',
+    vdom: 'root',
+    os_name: 'Unknown',
+    last_seen: Math.floor(Date.now() / 1000) - 14400, // 4 hours ago (should be filtered out with 2h retention)
+    is_online: false,
+    active_start_time: Math.floor(Date.now() / 1000) - 21600, // 6 hours ago
+    detected_interface: 'lan1',
     is_master_device: true,
     purdue_level: '3'
   }
@@ -214,13 +246,14 @@ app.get('/api/devices', async (req, res) => {
       last_seen_formatted: convertTimestamp(device.last_seen),
       active_start_time_formatted: convertTimestamp(device.active_start_time),
       dhcp_lease_expire_formatted: device.dhcp_lease_expire ? convertTimestamp(device.dhcp_lease_expire) : null,
-      is_within_retention: isWithinRetention(device.last_seen, parseInt(config.RETENTION_HOURS))
+      is_within_retention: isWithinRetention(device.last_seen, parseInt(config.RETENTION_HOURS || '2'))
     }));
     
-    // Filtra por tempo de retenção
-    const filteredDevices = processedDevices.filter(device => 
-      device.is_within_retention
-    );
+    // Filtra por tempo de retenção - incluir todos os dispositivos se retention for 0 ou não definido
+    const retentionHours = parseInt(config.RETENTION_HOURS || '2');
+    const filteredDevices = retentionHours > 0 
+      ? processedDevices.filter(device => device.is_within_retention)
+      : processedDevices;
     
     res.json({
       success: true,
@@ -242,7 +275,7 @@ app.get('/api/devices', async (req, res) => {
         ...device,
         last_seen_formatted: convertTimestamp(device.last_seen),
         active_start_time_formatted: convertTimestamp(device.active_start_time),
-        is_within_retention: true
+        is_within_retention: isWithinRetention(device.last_seen, parseInt(config.RETENTION_HOURS || '2'))
       })),
       using_mock_data: true
     });

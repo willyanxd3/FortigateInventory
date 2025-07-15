@@ -30,7 +30,7 @@ export function ConfigTab({ onTestConnection, onSaveConfig, currentConfig }: Con
     } catch (error) {
       setTestResult({
         success: false,
-        message: 'Erro ao testar conexão'
+        message: 'Error testing connection'
       });
     } finally {
       setIsTesting(false);
@@ -43,9 +43,9 @@ export function ConfigTab({ onTestConnection, onSaveConfig, currentConfig }: Con
     
     try {
       await onSaveConfig({ retention_hours: retentionHours });
-      alert('Configurações salvas com sucesso!');
+      alert('Settings saved successfully!');
     } catch (error) {
-      alert('Erro ao salvar configurações');
+      alert('Error saving settings');
     } finally {
       setIsSaving(false);
     }
@@ -123,7 +123,7 @@ export function ConfigTab({ onTestConnection, onSaveConfig, currentConfig }: Con
             </label>
             <input
               type="number"
-              min="1"
+              min="0"
               max="168"
               value={retentionHours}
               onChange={(e) => setRetentionHours(e.target.value)}
@@ -131,7 +131,7 @@ export function ConfigTab({ onTestConnection, onSaveConfig, currentConfig }: Con
               required
             />
             <p className="text-xs text-gray-400 mt-1">
-              Devices will only be shown if seen within the last X hours
+              Devices will only be shown if seen within the last X hours (0 = show all)
             </p>
           </div>
 
@@ -154,13 +154,16 @@ export function ConfigTab({ onTestConnection, onSaveConfig, currentConfig }: Con
         
         <div className="space-y-2 text-sm">
           <p className="text-gray-300">
-            <span className="font-medium">IP & Token:</span> Configured in fortigate.conf file
+            <span className="font-medium">IP & Token:</span> Configure in fortigate.conf file
           </p>
           <p className="text-gray-300">
             <span className="font-medium">Endpoint:</span> /api/v2/monitor/user/device/query
           </p>
           <p className="text-gray-300">
-            <span className="font-medium">Mode:</span> System works with mock data if FortiGate is unavailable
+            <span className="font-medium">Mode:</span> Uses mock data if FortiGate is unavailable
+          </p>
+          <p className="text-gray-300">
+            <span className="font-medium">Retention:</span> Set to 0 to show all devices regardless of last seen time
           </p>
         </div>
       </div>

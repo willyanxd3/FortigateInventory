@@ -27,7 +27,7 @@ export function WhitelistTab({ whitelist, onSave, onUpdate, onDelete }: Whitelis
     // Validar MACs
     const invalidMacs = macs.filter(mac => !validateMac(mac));
     if (invalidMacs.length > 0) {
-      setErrors([`MACs inválidos: ${invalidMacs.join(', ')}`]);
+      setErrors([`Invalid MACs: ${invalidMacs.join(', ')}`]);
       return;
     }
 
@@ -44,7 +44,7 @@ export function WhitelistTab({ whitelist, onSave, onUpdate, onDelete }: Whitelis
       setEditingItem(null);
       setFormData({ name: '', macs: '' });
     } catch (error) {
-      setErrors(['Erro ao salvar lista']);
+      setErrors(['Error saving list']);
     }
   };
 
@@ -58,7 +58,7 @@ export function WhitelistTab({ whitelist, onSave, onUpdate, onDelete }: Whitelis
   };
 
   const handleDelete = async (id: number) => {
-    if (confirm('Tem certeza que deseja deletar esta lista?')) {
+    if (confirm('Are you sure you want to delete this list?')) {
       await onDelete(id);
     }
   };
@@ -204,7 +204,7 @@ export function WhitelistTab({ whitelist, onSave, onUpdate, onDelete }: Whitelis
         <div className="text-center py-12">
           <Shield className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-400">
-            No whitelist created yet.
+            No whitelists created yet.
           </p>
         </div>
       )}

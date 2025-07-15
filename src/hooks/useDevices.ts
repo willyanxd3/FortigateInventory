@@ -18,6 +18,9 @@ export function useDevices() {
   const [error, setError] = useState<string | null>(null);
   const [whitelist, setWhitelist] = useState<WhitelistItem[]>([]);
   const [serverInfo, setServerInfo] = useState<{ server_ip: string; port: number } | null>(null);
+  const [config, setConfig] = useState<{ retention_hours: string } | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
 
   const apiBaseUrl = getApiBaseUrl();
 
@@ -31,6 +34,19 @@ export function useDevices() {
       }
     } catch (err) {
       console.error('Erro ao buscar informações do servidor:', err);
+    }
+  };
+
+  const fetchConfig = async () => {
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/config`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setConfig(data.config);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar configurações:', err);
     }
   };
 
@@ -97,6 +113,9 @@ export function useDevices() {
       });
       
       const data = await response.json();
+      if (data.success) {
+        await fetchConfig();
+      }
       return data;
     } catch (err) {
       return {
@@ -213,11 +232,47 @@ export function useDevices() {
     }
   };
 
+  const login = async (username: string, password: string) => {
+    try {
+      setAuthLoading(true);
+      const response = await fetch(`${apiBaseUrl}/api/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setIsAuthenticated(true);
+        localStorage.setItem('fortigate_auth', 'true');
+        return true;
+      }
+      
+      return false;
+    } catch (err) {
+      return false;
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   useEffect(() => {
+    // Verificar se já está autenticado
+    const authStatus = localStorage.getItem('fortigate_auth');
+    if (authStatus === 'true') {
+      setIsAuthenticated(true);
+    }
+    
+    if (!isAuthenticated) return;
+    
     fetchServerInfo();
+    fetchConfig();
     fetchDevices();
     fetchWhitelist();
-  }, []);
+  }, [isAuthenticated]);
 
   return {
     devices,
@@ -225,6 +280,10 @@ export function useDevices() {
     error,
     whitelist,
     serverInfo,
+    config,
+    isAuthenticated,
+    authLoading,
+    login,
     refetch: fetchDevices,
     testConnection,
     saveConfig,

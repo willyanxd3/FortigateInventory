@@ -67,6 +67,8 @@ if [ ! -f "fortigate.conf" ]; then
     cat > fortigate.conf << EOF
 FORTIGATE_IP=172.31.254.1
 FORTIGATE_TOKEN=SEU_TOKEN
+USER=admin
+SENHA=admin
 RETENTION_HOURS=2
 EOF
     print_success "Arquivo fortigate.conf criado"

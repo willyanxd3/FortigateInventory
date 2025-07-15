@@ -36,7 +36,7 @@ export function filterDevices(devices: Device[], filters: Filters, whitelist: Wh
       ];
       
       if (!searchableFields.some(field => 
-        field.toLowerCase().includes(searchTerm)
+        field && field.toLowerCase().includes(searchTerm)
       )) {
         return false;
       }

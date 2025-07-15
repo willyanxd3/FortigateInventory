@@ -1,16 +1,24 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { Settings, TestTube, Check, X } from 'lucide-react';
 
 interface ConfigTabProps {
   onTestConnection: () => Promise<any>;
   onSaveConfig: (config: { retention_hours: string }) => Promise<any>;
+  currentConfig?: { retention_hours: string };
 }
 
-export function ConfigTab({ onTestConnection, onSaveConfig }: ConfigTabProps) {
+export function ConfigTab({ onTestConnection, onSaveConfig, currentConfig }: ConfigTabProps) {
   const [retentionHours, setRetentionHours] = useState('2');
   const [testResult, setTestResult] = useState<any>(null);
   const [isTesting, setIsTesting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (currentConfig) {
+      setRetentionHours(currentConfig.retention_hours);
+    }
+  }, [currentConfig]);
 
   const handleTestConnection = async () => {
     setIsTesting(true);

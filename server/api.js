@@ -296,7 +296,9 @@ app.get('/api/config', (req, res) => {
       success: true,
       config: {
         retention_hours: config.RETENTION_HOURS,
-        fortigate_ip: config.FORTIGATE_IP
+        fortigate_ip: config.FORTIGATE_IP,
+        user: config.USER,
+        senha: config.SENHA
       }
     });
   } catch (error) {
@@ -310,10 +312,12 @@ app.get('/api/config', (req, res) => {
 // Rota para salvar configurações
 app.post('/api/config', (req, res) => {
   try {
-    const { retention_hours } = req.body;
+    const { retention_hours, user, senha } = req.body;
     const config = readConfig();
     
-    config.RETENTION_HOURS = retention_hours;
+    if (retention_hours !== undefined) config.RETENTION_HOURS = retention_hours;
+    if (user !== undefined) config.USER = user;
+    if (senha !== undefined) config.SENHA = senha;
     
     const configContent = Object.entries(config)
       .map(([key, value]) => `${key}=${value}`)
@@ -446,7 +450,7 @@ app.delete('/api/whitelist/:id/mac/:mac', async (req, res) => {
 
 // Rota para obter IP do servidor
 app.get('/api/server-info', (req, res) => {
-  const os = require('os');
+  import('os').then(os => {
   const networkInterfaces = os.networkInterfaces();
   let serverIP = 'localhost';
   
@@ -467,4 +471,30 @@ app.get('/api/server-info', (req, res) => {
     server_ip: serverIP,
     port: PORT
   });
+  });
+});
+
+// Rota para login
+app.post('/api/login', (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const config = readConfig();
+    
+    if (username === config.USER && password === config.SENHA) {
+      res.json({
+        success: true,
+        message: 'Login realizado com sucesso'
+      });
+    } else {
+      res.status(401).json({
+        success: false,
+        message: 'Credenciais inválidas'
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor'
+    });
+  }
 });

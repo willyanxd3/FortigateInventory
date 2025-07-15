@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Shield, Settings, Monitor, RefreshCw } from 'lucide-react';
 import { useDevices } from './hooks/useDevices';
+import { LoginModal } from './components/LoginModal';
 import { StatsCards } from './components/StatsCards';
 import { DeviceFilters } from './components/DeviceFilters';
 import { DeviceTable } from './components/DeviceTable';
@@ -18,6 +19,10 @@ function App() {
     error,
     whitelist,
     serverInfo,
+    config,
+    isAuthenticated,
+    authLoading,
+    login,
     refetch,
     testConnection,
     saveConfig,
@@ -84,6 +89,11 @@ function App() {
       }
     }
   };
+
+  // Se não estiver autenticado, mostrar modal de login
+  if (!isAuthenticated) {
+    return <LoginModal onLogin={login} isLoading={authLoading} />;
+  }
 
   const tabs = [
     {
@@ -228,6 +238,7 @@ function App() {
           <ConfigTab
             onTestConnection={testConnection}
             onSaveConfig={saveConfig}
+            currentConfig={config}
           />
         )}
       </main>

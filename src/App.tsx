@@ -1,42 +1,45 @@
 import React, { useState, useMemo } from 'react';
 import { Shield, Settings, Monitor, RefreshCw } from 'lucide-react';
-import { useDevices } from './hooks/useDevices';
-import { LoginModal } from './components/LoginModal';
-import { StatsCards } from './components/StatsCards';
-import { DeviceFilters } from './components/DeviceFilters';
-import { DeviceTable } from './components/DeviceTable';
-import { DeviceModal } from './components/DeviceModal';
-import { Pagination } from './components/Pagination';
-import { WhitelistTab } from './components/WhitelistTab';
-import { ConfigTab } from './components/ConfigTab';
-import { Device, Filters } from './types';
-import { calculateStats, filterDevices, paginateDevices } from './utils/deviceUtils';
 
+// Hooks
+import { useAuth, useDevices, useWhitelist, useConfig } from './hooks';
+
+// Components
+import { LoginModal } from './components/ui/LoginModal';
+import { StatsCards } from './components/ui/StatsCards';
+import { Pagination } from './components/ui/Pagination';
+import { DeviceFiltersComponent } from './components/devices/DeviceFilters';
+import { DeviceTable } from './components/devices/DeviceTable';
+import { DeviceModal } from './components/devices/DeviceModal';
+import { WhitelistTab } from './components/whitelist/WhitelistTab';
+import { ConfigTab } from './components/config/ConfigTab';
+
+// Types and Utils
+import { Device, DeviceFilters } from './types';
+import { calculateDeviceStats, filterDevices, paginateDevices } from './utils';
+
+/**
+ * Main application component
+ */
 function App() {
-  const {
-    devices,
-    loading,
-    error,
-    whitelist,
-    serverInfo,
-    config,
-    isAuthenticated,
-    authLoading,
-    login,
-    refetch,
-    testConnection,
-    saveConfig,
-    saveWhitelist,
-    updateWhitelist,
-    deleteWhitelist,
-    addToWhitelist,
-    removeFromWhitelist
-  } = useDevices();
+  // Hooks
+  const { isAuthenticated, isLoading: authLoading, login } = useAuth();
+  const { devices, isLoading: devicesLoading, error: devicesError, refetch: refetchDevices } = useDevices();
+  const { 
+    whitelist, 
+    createWhitelist, 
+    updateWhitelist, 
+    deleteWhitelist, 
+    addMacToWhitelist, 
+    removeMacFromWhitelist 
+  } = useWhitelist();
+  const { config, serverInfo, testConnection, saveConfig } = useConfig();
 
+  // Local state
   const [activeTab, setActiveTab] = useState<'devices' | 'whitelist' | 'config'>('devices');
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [filters, setFilters] = useState<Filters>({
+  const [filters, setFilters] = useState<DeviceFilters>({
     search: '',
     os: '',
     mac: '',
@@ -47,37 +50,28 @@ function App() {
     device_type: ''
   });
 
-  // Calculate statistics
-  const stats = useMemo(() => calculateStats(devices, whitelist), [devices, whitelist]);
-
-  // Filter devices
-  const filteredDevices = useMemo(() => 
-    filterDevices(devices, filters, whitelist), 
-    [devices, filters, whitelist]
-  );
-
-  // Paginate devices
+  // Computed values
+  const stats = useMemo(() => calculateDeviceStats(devices, whitelist), [devices, whitelist]);
+  const filteredDevices = useMemo(() => filterDevices(devices, filters, whitelist), [devices, filters, whitelist]);
   const totalPages = Math.ceil(filteredDevices.length / 20);
-  const paginatedDevices = useMemo(() => 
-    paginateDevices(filteredDevices, currentPage, 20), 
-    [filteredDevices, currentPage]
-  );
+  const paginatedDevices = useMemo(() => paginateDevices(filteredDevices, currentPage, 20), [filteredDevices, currentPage]);
 
   // Reset page when filters change
   React.useEffect(() => {
     setCurrentPage(1);
   }, [filters]);
 
+  // Event handlers
   const handleRefresh = async () => {
-    await refetch();
+    await refetchDevices();
   };
 
   const handleAddToWhitelist = async (mac: string) => {
-    // For simplicity, add to first list or create new one
+    // Add to first list or create new one
     if (whitelist.length > 0) {
-      await addToWhitelist(whitelist[0].id, mac);
+      await addMacToWhitelist(whitelist[0].id, mac);
     } else {
-      await saveWhitelist({ name: 'Authorized Devices', macs: [mac] });
+      await createWhitelist('Authorized Devices', [mac]);
     }
   };
 
@@ -85,16 +79,17 @@ function App() {
     // Remove from all lists containing the MAC
     for (const list of whitelist) {
       if (list.macs.includes(mac)) {
-        await removeFromWhitelist(list.id, mac);
+        await removeMacFromWhitelist(list.id, mac);
       }
     }
   };
 
-  // Se não estiver autenticado, mostrar modal de login
+  // Show login modal if not authenticated
   if (!isAuthenticated) {
     return <LoginModal onLogin={login} isLoading={authLoading} />;
   }
 
+  // Tab configuration
   const tabs = [
     {
       id: 'devices' as const,
@@ -142,10 +137,10 @@ function App() {
             
             <button
               onClick={handleRefresh}
-              disabled={loading}
+              disabled={devicesLoading}
               className="flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${devicesLoading ? 'animate-spin' : ''}`} />
               Refresh
             </button>
           </div>
@@ -185,14 +180,14 @@ function App() {
       {/* Content */}
       <main className="container mx-auto px-4 py-8">
         {/* Error Message */}
-        {error && (
+        {devicesError && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
-            <p className="text-red-400">{error}</p>
+            <p className="text-red-400">{devicesError}</p>
           </div>
         )}
 
         {/* Loading State */}
-        {loading && (
+        {devicesLoading && (
           <div className="text-center py-12">
             <RefreshCw className="w-8 h-8 text-cyan-400 animate-spin mx-auto mb-4" />
             <p className="text-gray-300">Loading devices...</p>
@@ -200,10 +195,10 @@ function App() {
         )}
 
         {/* Devices Tab */}
-        {activeTab === 'devices' && !loading && (
+        {activeTab === 'devices' && !devicesLoading && (
           <>
             <StatsCards stats={stats} />
-            <DeviceFilters 
+            <DeviceFiltersComponent 
               filters={filters} 
               onFiltersChange={setFilters} 
               devices={devices}
@@ -227,7 +222,7 @@ function App() {
         {activeTab === 'whitelist' && (
           <WhitelistTab
             whitelist={whitelist}
-            onSave={saveWhitelist}
+            onSave={createWhitelist}
             onUpdate={updateWhitelist}
             onDelete={deleteWhitelist}
           />
@@ -238,7 +233,7 @@ function App() {
           <ConfigTab
             onTestConnection={testConnection}
             onSaveConfig={saveConfig}
-            currentConfig={config}
+            currentConfig={config || undefined}
           />
         )}
       </main>

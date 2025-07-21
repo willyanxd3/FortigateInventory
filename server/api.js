@@ -45,6 +45,7 @@ server.on('error', (err) => {
     process.exit(1);
   }
 });
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -208,7 +209,7 @@ const mockDevices = [
     detected_interface: 'lan1',
     is_master_device: true,
     purdue_level: '3'
-  }
+  },
   {
     ipv4_address: '172.31.254.201',
     mac: '88:99:AA:BB:CC:DD',
@@ -520,26 +521,26 @@ app.delete('/api/whitelist/:id/mac/:mac', async (req, res) => {
 // Rota para obter IP do servidor
 app.get('/api/server-info', (req, res) => {
   import('os').then(os => {
-  const networkInterfaces = os.networkInterfaces();
-  let serverIP = 'localhost';
-  
-  // Encontrar o primeiro IP não-loopback
-  for (const interfaceName in networkInterfaces) {
-    const addresses = networkInterfaces[interfaceName];
-    for (const address of addresses) {
-      if (address.family === 'IPv4' && !address.internal) {
-        serverIP = address.address;
-        break;
+    const networkInterfaces = os.networkInterfaces();
+    let serverIP = 'localhost';
+    
+    // Encontrar o primeiro IP não-loopback
+    for (const interfaceName in networkInterfaces) {
+      const addresses = networkInterfaces[interfaceName];
+      for (const address of addresses) {
+        if (address.family === 'IPv4' && !address.internal) {
+          serverIP = address.address;
+          break;
+        }
       }
+      if (serverIP !== 'localhost') break;
     }
-    if (serverIP !== 'localhost') break;
-  }
-  
-  res.json({
-    success: true,
-    server_ip: serverIP,
-    port: PORT
-  });
+    
+    res.json({
+      success: true,
+      server_ip: serverIP,
+      port: PORT
+    });
   });
 });
 

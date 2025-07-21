@@ -94,6 +94,14 @@ function isWithinRetention(lastSeen, retentionHours) {
   return (now - lastSeen) <= retentionSeconds;
 }
 
+// Função para determinar se dispositivo está online baseado no last_seen
+function isDeviceOnline(lastSeen) {
+  if (!lastSeen) return false;
+  const now = Math.floor(Date.now() / 1000);
+  const offlineThresholdSeconds = 25 * 60; // 25 minutos em segundos
+  return (now - lastSeen) <= offlineThresholdSeconds;
+}
+
 // Mock data para demonstração (baseado na resposta real do FortiGate)
 const mockDevices = [
   {
@@ -106,7 +114,6 @@ const mockDevices = [
     os_name: 'Ubuntu',
     last_seen: Math.floor(Date.now() / 1000) - 300, // 5 minutes ago
     unjoined_forticlient_endpoint: false,
-    is_online: false,
     active_start_time: Math.floor(Date.now() / 1000) - 3600, // 1 hour ago
     is_fortiguard_src: true,
     purdue_level: '3',
@@ -127,7 +134,6 @@ const mockDevices = [
     last_seen: Math.floor(Date.now() / 1000) - 120, // 2 minutes ago
     host_src: 'dhcp',
     unjoined_forticlient_endpoint: false,
-    is_online: true,
     active_start_time: Math.floor(Date.now() / 1000) - 7200, // 2 hours ago
     dhcp_lease_status: 'leased',
     dhcp_lease_expire: Math.floor(Date.now() / 1000) + 86400,
@@ -153,7 +159,6 @@ const mockDevices = [
     os_name: 'Windows',
     os_version: '11',
     last_seen: Math.floor(Date.now() / 1000) - 60, // 1 minute ago
-    is_online: true,
     active_start_time: Math.floor(Date.now() / 1000) - 14400, // 4 hours ago
     detected_interface: 'lan1',
     is_master_device: true,
@@ -169,7 +174,6 @@ const mockDevices = [
     vdom: 'root',
     os_name: 'Embedded',
     last_seen: Math.floor(Date.now() / 1000) - 900, // 15 minutes ago
-    is_online: true,
     active_start_time: Math.floor(Date.now() / 1000) - 10800, // 3 hours ago
     detected_interface: 'lan2',
     is_master_device: true,
@@ -186,7 +190,6 @@ const mockDevices = [
     os_name: 'Windows',
     os_version: '10',
     last_seen: Math.floor(Date.now() / 1000) - 10800, // 3 hours ago (offline)
-    is_online: false,
     active_start_time: Math.floor(Date.now() / 1000) - 18000, // 5 hours ago
     detected_interface: 'lan1',
     is_master_device: true,
@@ -201,8 +204,39 @@ const mockDevices = [
     vdom: 'root',
     os_name: 'Unknown',
     last_seen: Math.floor(Date.now() / 1000) - 14400, // 4 hours ago (should be filtered out with 2h retention)
-    is_online: false,
     active_start_time: Math.floor(Date.now() / 1000) - 21600, // 6 hours ago
+    detected_interface: 'lan1',
+    is_master_device: true,
+    purdue_level: '3'
+  }
+  {
+    ipv4_address: '172.31.254.201',
+    mac: '88:99:AA:BB:CC:DD',
+    hostname: 'TABLET-OFFLINE',
+    hardware_vendor: 'Samsung',
+    hardware_type: 'Tablet',
+    hardware_family: 'Galaxy',
+    vdom: 'root',
+    os_name: 'Android',
+    os_version: '12',
+    last_seen: Math.floor(Date.now() / 1000) - 1800, // 30 minutes ago (offline)
+    active_start_time: Math.floor(Date.now() / 1000) - 7200, // 2 hours ago
+    detected_interface: 'lan1',
+    is_master_device: true,
+    purdue_level: '3'
+  },
+  {
+    ipv4_address: '172.31.254.202',
+    mac: 'CC:DD:EE:FF:00:11',
+    hostname: 'PHONE-RECENT',
+    hardware_vendor: 'Apple',
+    hardware_type: 'Mobile',
+    hardware_family: 'iPhone',
+    vdom: 'root',
+    os_name: 'iOS',
+    os_version: '17',
+    last_seen: Math.floor(Date.now() / 1000) - 600, // 10 minutes ago (online)
+    active_start_time: Math.floor(Date.now() / 1000) - 3600, // 1 hour ago
     detected_interface: 'lan1',
     is_master_device: true,
     purdue_level: '3'
@@ -243,6 +277,7 @@ app.get('/api/devices', async (req, res) => {
     // Processa os dispositivos
     const processedDevices = devices.map(device => ({
       ...device,
+      is_online: isDeviceOnline(device.last_seen), // Calcular status online baseado no last_seen
       last_seen_formatted: convertTimestamp(device.last_seen),
       active_start_time_formatted: convertTimestamp(device.active_start_time),
       dhcp_lease_expire_formatted: device.dhcp_lease_expire ? convertTimestamp(device.dhcp_lease_expire) : null,
@@ -273,6 +308,7 @@ app.get('/api/devices', async (req, res) => {
       error: 'Erro interno do servidor',
       devices: mockDevices.map(device => ({
         ...device,
+        is_online: isDeviceOnline(device.last_seen), // Calcular status online baseado no last_seen
         last_seen_formatted: convertTimestamp(device.last_seen),
         active_start_time_formatted: convertTimestamp(device.active_start_time),
         is_within_retention: isWithinRetention(device.last_seen, parseInt(config.RETENTION_HOURS || '2'))

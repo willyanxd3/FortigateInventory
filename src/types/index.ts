@@ -20,7 +20,7 @@ export interface Device {
   
   // Status e tempo
   last_seen: number;
-  is_online: boolean;
+  is_online?: boolean; // Agora é opcional pois será calculado baseado no last_seen
   active_start_time: number;
   
   // DHCP

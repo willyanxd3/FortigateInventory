@@ -165,6 +165,9 @@ export function ConfigTab({ onTestConnection, onSaveConfig, currentConfig }: Con
           <p className="text-gray-300">
             <span className="font-medium">Retention:</span> Set to 0 to show all devices regardless of last seen time
           </p>
+          <p className="text-gray-300">
+            <span className="font-medium">Online Status:</span> Devices are considered online if last seen ≤ 25 minutes
+          </p>
         </div>
       </div>
     </div>
